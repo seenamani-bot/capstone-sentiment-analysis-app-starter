@@ -1,12 +1,163 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Sentiment Analysis</title>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+        <style>
+            /* Centering the container */
+            .container {
+                max-width: 960px;
+                margin: 0 auto;
+            }
+
+            .results {
+                margin-top: 30px;
+                text-align: center;
+            }
+
+            /* Layout for charts */
+            .chart-container {
+                display: flex;
+                justify-content: space-between;
+                margin-top: 30px;
+                padding: 0 10px; /* Added padding to avoid chart being too close to edges */
+            }
+
+            .col-lg-6 {
+                max-width: 48%;  /* Ensures charts take equal space */
+                padding: 10px;
+            }
+
+            /* Styling for chart titles */
+            .chart-title {
+                text-align: center;
+                font-size: 1.2rem;
+                font-weight: bold;
+                margin-bottom: 15px;
+                color: #333;
+            }
+
+            .form-group {
+                margin-bottom: 20px;
+            }
+
+            .btn {
+                margin-top: 15px;
+            }
+
+            .form-control {
+                margin-bottom: 15px;
+            }
+
+            /* Ensure proper layout for the form */
+            .row {
+                margin: 0;
+            }
+
+            /* Add styles for better font and spacing */
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f8f9fa;
+            }
+
+            h1 {
+                color: #007bff;
+                font-weight: bold;
+            }
+        </style>
     </head>
     <body>
-        <form method="POST">
-            <textarea name="user_text" rows="5"></textarea>
-            <input type="submit" value="Analyze Text">
-        </form>
+      <div class="container">
+          <div class="text-center">
+              <h1>SentimentScope Analyzer</h1>
+          </div>
+          <div class="row">
+              <div class="col-lg-8 mx-auto">
+                  <form method="POST">
+                      <div class="form-group">
+                          <textarea class="form-control" name="user_text" rows="5" placeholder="Enter text for sentiment analysis..."></textarea>
+                      </div>
+                      <input type="submit" value="Analyze Text" class="btn btn-primary">
+                  </form>
+              </div>
+          </div>
+
+          {% if sentiment %}
+            <div class="results">
+                <h2>Sentiment Results</h2>
+                <p><strong>Positive:</strong> {{ sentiment['pos'] * 100 }}%</p>
+                <p><strong>Neutral:</strong> {{ sentiment['neu'] * 100 }}%</p>
+                <p><strong>Negative:</strong> {{ sentiment['neg'] * 100 }}%</p>
+                <p><strong>Custom Keras Model:</strong> {{ sentiment['custom model positive'] }}</p>
+            </div>
+          {% endif %}
+
+          {% if barChartData %}
+            <div class="chart-container">
+                <!-- VADER Sentiment Bar Chart -->
+                <div id="barChart" class="col-lg-6">
+                    <script>
+                        var barChartData = {
+                            labels: {{ barChartData['labels']|tojson }},
+                            values: {{ barChartData['values']|tojson }}
+                        };
+
+                        var data = [{
+                            x: barChartData.labels,
+                            y: barChartData.values,
+                            type: 'bar',
+                            orientation: 'h',
+                            marker: { color: ['#ff6666', '#f2c91f', '#66ff66'] }
+                        }];
+                        
+                        var layout = {
+                            width: 500,
+                            height: 400,
+                            margin: { t: 25, r: 25, l: 25, b: 25 },
+                            paper_bgcolor: "white",
+                            font: { color: "#333333", family: "lato" },
+                            title: 'VADER Sentiment Analysis',
+                            xaxis: { title: 'Sentiment Type' },
+                            yaxis: { title: 'Percentage' }
+                        };
+                        Plotly.newPlot('barChart', data, layout);
+                    </script>
+                </div>
+
+                <!-- Custom Sentiment Gauge -->
+                <div id="gauge" class="col-lg-6">
+                    <script>
+                        var value = {{ gauge_data['value']|tojson }};
+                        var data = [{
+                            type: "indicator",
+                            mode: "gauge+number",
+                            value: value,
+                            gauge: {
+                                paddingTop: 50,
+                                axis: { range: [0, 100],tickwidth: 0, tickcolor: "white" },
+                                bar:  { color: "#000" },
+                                bgcolor: "#f4f4f4",
+                                borderwidth: 2,
+                                bordercolor: "black",
+                                steps: [
+              { range: [0, 20], color: "rgba (200, 0, 0, 0.8)" },
+              { range: [21, 40], color: "rgba (247, 156, 71, 0.8)"},
+              { range: [41, 60], color: "rgba (255, 218, 112, 0.8)" },
+              { range: [61, 80], color: "rgba (125, 223, 180, 0.8)" },
+              { range: [81, 100], color: "rgba (30, 130, 76, 0.8)"}
+            ],
+                            }
+                        }];
+                        var layout = { title: 'Custom Model Sentiment Analysis' };
+                        Plotly.newPlot('gauge', data, layout);
+                    </script>
+                </div>
+            </div>
+          {% endif %}
+    </div>
     </body>
 </html>
